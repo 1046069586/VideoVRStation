@@ -4,45 +4,49 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
+import * as THREE from 'three'
 import { createScene } from './sceneSetup'
 import { initControllers } from './controllers'
 import { createVideos } from './videoManager'
 
-let container = null
-let scene = null
-let camera = null
-let renderer = null
-let listener = null
+let container: HTMLElement | null = null
+let scene: THREE.Scene | null = null
+let camera: THREE.PerspectiveCamera | null = null
+let renderer: THREE.WebGLRenderer | null = null
+let listener: THREE.AudioListener | null = null
 
-let obstacles: any[] = []
-let interactableObjects: any[] = []
+let obstacles: THREE.Object3D[] = []
+let interactableObjects: THREE.Object3D[] = []
 let videos: { [key: string]: HTMLVideoElement } = {}
 
-let controllers = null
-let loopObjects = []
+let controllers: ReturnType<typeof initControllers> | null = null
+let loopObjects: any[] = []
 
 function render() {
   // const delta = 0.016
-  const delta = (renderer.xr.isPresenting && renderer.xr.getSession()) ? (renderer.clock ? renderer.clock.getDelta() : 0.016) : 0.016;
+  // renderer.clock may be attached elsewhere; use a safe any-cast to avoid type errors
+  const delta = (renderer && (renderer as any).xr?.isPresenting && (renderer as any).xr.getSession())
+    ? ((renderer as any).clock ? (renderer as any).clock.getDelta() : 0.016)
+    : 0.016;
+
   for (const obj of loopObjects) {
-    if (obj.tick) {
+    if (obj && typeof obj.tick === 'function') {
       obj.tick(delta)
     }
   }
-  if (controllers) {
-    if (controllers.handleJoystickMovement) {
-      controllers.handleJoystickMovement(delta)
-    }
-    if (controllers.laserFollow) {
-      controllers.laserFollow(controllers.controllerLeft, controllers.lLaser, controllers.lCircle)
-      controllers.laserFollow(controllers.controllerRight, controllers.rLaser, controllers.rCircle)
-    }
+
+  // controllers may be null; use optional chaining and guard their members
+  controllers?.handleJoystickMovement?.(delta)
+  controllers?.laserFollow?.(controllers?.controllerLeft, controllers?.lLaser, controllers?.lCircle)
+  controllers?.laserFollow?.(controllers?.controllerRight, controllers?.rLaser, controllers?.rCircle)
+
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera)
   }
-  renderer.render(scene, camera)
 }
 
 function animate() {
-  renderer.setAnimationLoop(render)
+  if (renderer) renderer.setAnimationLoop(render)
 }
 
 const onResize = () => {
@@ -58,17 +62,18 @@ onMounted(async () => {
   const res = await createScene('container')
   container = res.container
   scene = res.scene
-  camera = res.camera
+  camera = res.camera as THREE.PerspectiveCamera
   renderer = res.renderer
   listener = res.listener
   obstacles = res.obstacles
   interactableObjects = res.interactableObjects
   videos = res.videos
 
-  controllers = initControllers({ renderer, scene, camera, interactableObjects, videos, obstacles })
-  loopObjects = controllers.loopObjects || []
+  // pass explicitly-typed values to controllers
+  controllers = initControllers({ renderer: renderer as THREE.WebGLRenderer, scene: scene as THREE.Scene, camera: camera as THREE.Camera, interactableObjects, videos, obstacles })
+  loopObjects = controllers?.loopObjects || []
 
-  await createVideos(scene, listener, interactableObjects, videos)
+  await createVideos(scene as THREE.Scene, listener as THREE.AudioListener, interactableObjects, videos)
 
   window.addEventListener('resize', onResize)
   animate()

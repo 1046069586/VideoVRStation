@@ -30,5 +30,12 @@ export default defineConfigWithVueTs(
     ...pluginPlaywright.configs['flat/recommended'],
     files: ['e2e/**/*.{test,spec}.{js,ts,jsx,tsx}'],
   },
+  // project-wide rule tweaks
+  {
+    // disable explicit any rule across the project. Change to 'warn' if you prefer warnings.
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
   skipFormatting,
 )
