@@ -34,7 +34,7 @@ export async function createScene(containerId = 'container') {
   // containers for shared objects
   const obstacles: THREE.Object3D[] = [];
   const interactableObjects: THREE.Object3D[] = [];
-  const videos: any[] = [];
+  const videos: { [key: string]: HTMLVideoElement } = {};
 
   // load gltf scene (non-blocking)
   const loader = new GLTFLoader();

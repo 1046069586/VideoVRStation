@@ -2,7 +2,7 @@
   <div id="container" class="vr-scene-container"></div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 import { createScene } from './sceneSetup'
 import { initControllers } from './controllers'
@@ -14,15 +14,16 @@ let camera = null
 let renderer = null
 let listener = null
 
-let obstacles = []
-let interactableObjects = []
-let videos = []
+let obstacles: any[] = []
+let interactableObjects: any[] = []
+let videos: { [key: string]: HTMLVideoElement } = {}
 
 let controllers = null
 let loopObjects = []
 
 function render() {
-  const delta = 0.016
+  // const delta = 0.016
+  const delta = (renderer.xr.isPresenting && renderer.xr.getSession()) ? (renderer.clock ? renderer.clock.getDelta() : 0.016) : 0.016;
   for (const obj of loopObjects) {
     if (obj.tick) {
       obj.tick(delta)

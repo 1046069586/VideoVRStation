@@ -6,7 +6,7 @@ export type InitControllersOptions = {
   scene: THREE.Scene;
   camera: THREE.Camera;
   interactableObjects: THREE.Object3D[];
-  videos: any[];
+  videos: { [key: string]: HTMLVideoElement };
   obstacles: THREE.Object3D[];
   playerStart?: THREE.Vector3;
 };
@@ -32,10 +32,6 @@ export function initControllers(options: InitControllersOptions) {
   player.add(controllerGripRight);
 
   // state
-  let grabbedObject: THREE.Object3D | null = null;
-  const grabOffset = new THREE.Vector3();
-  let grabByController: any = null;
-
   const loopObjects: any[] = [];
 
   // create lasers and circles
@@ -47,15 +43,6 @@ export function initControllers(options: InitControllersOptions) {
   lCircle.visible = false;
   scene.add(rCircle, lCircle);
   loopObjects.push(rCircle, lCircle);
-
-  // add small play controller mesh example (kept minimal)
-  const controllerGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-  const controllerMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-  const controllerMesh = new THREE.Mesh(controllerGeo, controllerMat);
-  controllerMesh.name = 'playController';
-  controllerMesh.position.set(1, 1, 7.5);
-  scene.add(controllerMesh);
-  interactableObjects.push(controllerMesh);
 
   // attach events
   function onSelectStart(event: any) {
@@ -71,29 +58,22 @@ export function initControllers(options: InitControllersOptions) {
 
     const intersects = raycaster.intersectObjects(interactableObjects, true);
     for (const inter of intersects) {
-      if (inter.object.name === 'playController') {
-        for (const video of videos) {
-          video.play && video.play();
+      const video = videos[inter.object.userData.index];
+      if (video) {
+        if (inter.object.userData.action === 'play') {
+          video.play?.();
+          break
         }
-      }
-      if (inter.object === grabbedObject) continue;
-      if ((inter.object as any).isMesh) {
-        grabbedObject = inter.object;
-        grabByController = controller;
-        const intersectionPoint = inter.point;
-        grabOffset.copy(grabbedObject.position).sub(intersectionPoint);
-        controller.attach(grabbedObject);
-        break;
+        if (inter.object.userData.action === 'stop') {
+          video.pause?.();
+          break
+        }
       }
     }
   }
 
   function onSelectEnd() {
-    if (grabbedObject) {
-      scene.attach(grabbedObject);
-    }
-    grabbedObject = null;
-    grabByController = null;
+  
   }
 
   controllerLeft.addEventListener('selectstart', onSelectStart);

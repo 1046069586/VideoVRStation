@@ -6,7 +6,7 @@ export function createVideoScreen(video, listener, videos) {
       videoElem.crossOrigin = 'anonymous';
       videoElem.loop = true;
       videoElem.muted = true;
-      videos.push(videoElem)
+      videos[video.id] = videoElem;
       // videoElem.autoplay = true;
       // videoElem.preload="auto"
       // videoElem.controls = true;

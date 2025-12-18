@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import {  GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
-export  async function createTerminal(video){
+export  async function createTerminal(video, interactableObjects: THREE.Object3D[]) {
     const loader = new GLTFLoader();
     const pannelGLTF = await loader.loadAsync('./terminal.glb')
     const pannel = pannelGLTF.scene.children[0]
     pannel.scale.set(0.008,0.008,0.008)
-    const {playBtn, stopBtn} = createTerminalButton()
+    const {playBtn, stopBtn} = createTerminalButton(video.id)
+    interactableObjects.push(playBtn, stopBtn)
+    
     const pannelGroup = new THREE.Group()
     pannelGroup.add(pannel)
     pannelGroup.add(playBtn, stopBtn)
@@ -21,13 +23,13 @@ export  async function createTerminal(video){
 }
 
 
-function createTerminalButton(){
-    const playBtn = createPlayButton();
-    const stopBtn = createStopButton();
+function createTerminalButton(videoID){
+    const playBtn = createPlayButton(videoID);
+    const stopBtn = createStopButton(videoID);
     return {playBtn, stopBtn };
 }
 
-function createPlayButton(){
+function createPlayButton(videoID){
         // 1. 创建材质
     const buttonMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 }); // 绿色
 
@@ -42,11 +44,13 @@ function createPlayButton(){
     playBtn.rotation.y = -Math.PI / 2; // 旋转90度
      // 让它平躺或立起来，视你的控制台角度而定
     playBtn.position.set(0.08, 0.9, 0); // 放到上面
+    playBtn.userData.index = videoID
+    playBtn.userData.action = 'play'
     return playBtn;
 }
 
 
-function createStopButton(){
+function createStopButton(videoID){
     const pauseGroup = new THREE.Group(); // 创建一个组
 
     const barGeo = new THREE.BoxGeometry(0.02, 0.08, 0.02); // 宽, 高, 深
@@ -55,10 +59,14 @@ function createStopButton(){
     // 左竖线
     const bar1 = new THREE.Mesh(barGeo, barMaterial);
     bar1.position.x = -0.02; // 向左移
+    bar1.userData.index = videoID;
+    bar1.userData.action = 'stop';
 
     // 右竖线
     const bar2 = new THREE.Mesh(barGeo, barMaterial);
     bar2.position.x = 0.02; // 向右移
+    bar2.userData.index = videoID;
+    bar2.userData.action = 'stop';
 
     pauseGroup.add(bar1);
     pauseGroup.add(bar2);
