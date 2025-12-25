@@ -34,7 +34,7 @@ export default defineConfigWithVueTs(
   {
     // disable explicit any rule across the project. Change to 'warn' if you prefer warnings.
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
   skipFormatting,

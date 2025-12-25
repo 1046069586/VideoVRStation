@@ -11,7 +11,7 @@
       "path": "./tsconfig.vitest.json"
     }
   ],
-  "compilerOptions": {
-    "noImplicitAny": false
-  }
+  // "compilerOptions": {
+  //   "noImplicitAny": true
+  // }
 }
