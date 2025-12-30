@@ -64,7 +64,25 @@ export async function createScene(containerId = 'container') {
   );
 
   // add VR button
-  container.appendChild(VRButton.createButton(renderer));
+  const vrButton = VRButton.createButton(renderer);
+  container.appendChild(vrButton);
+
+  // 在用户点击进入 VR 时，将 WebAudio 的 AudioContext resume（视为一次用户授权）。
+  // 注意：不要在这里对所有视频自动 play/unmute，播放应由用户使用 controller 点击单独触发。
+  vrButton.addEventListener('click', async () => {
+    try {
+      if ((listener as any) && (listener as any).context && (listener as any).context.state === 'suspended') {
+        try {
+          await ((listener as any).context as AudioContext).resume();
+          console.log('[audio] AudioContext resumed via VR button click');
+        } catch (e) {
+          console.warn('[audio] resume() failed:', e);
+        }
+      }
+    } catch (err) {
+      console.warn('[audio] VR entry audio handler error', err);
+    }
+  }, { once: true });
 
   return {
     container,

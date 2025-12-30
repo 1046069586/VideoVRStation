@@ -70,7 +70,7 @@ onMounted(async () => {
   videos = res.videos
 
   // pass explicitly-typed values to controllers
-  controllers = initControllers({ renderer: renderer as THREE.WebGLRenderer, scene: scene as THREE.Scene, camera: camera as THREE.Camera, interactableObjects, videos, obstacles })
+  controllers = initControllers({ renderer: renderer as THREE.WebGLRenderer, scene: scene as THREE.Scene, camera: camera as THREE.Camera, interactableObjects, videos, obstacles, listener })
   loopObjects = controllers?.loopObjects || []
 
   await createVideos(scene as THREE.Scene, listener as THREE.AudioListener, interactableObjects, videos)

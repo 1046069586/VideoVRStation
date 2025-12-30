@@ -7,12 +7,13 @@ export type InitControllersOptions = {
   camera: THREE.Camera;
   interactableObjects: THREE.Object3D[];
   videos: { [key: string]: HTMLVideoElement };
+  listener?: THREE.AudioListener;
   obstacles: THREE.Object3D[];
   playerStart?: THREE.Vector3;
 };
 
 export function initControllers(options: InitControllersOptions) {
-  const { renderer, scene, camera, interactableObjects, videos, obstacles } = options;
+  const { renderer, scene, camera, interactableObjects, videos, obstacles, listener } = options as any;
   const player = new THREE.Group();
   player.position.set(0, 0.2, 8);
   player.add(camera);
@@ -45,7 +46,7 @@ export function initControllers(options: InitControllersOptions) {
   loopObjects.push(rCircle, lCircle);
 
   // attach events
-  function onSelectStart(event: any) {
+  async function onSelectStart(event: any) {
     const controller = event.target;
     const tempMatrix = new THREE.Matrix4();
     tempMatrix.identity().extractRotation(controller.matrixWorld);
@@ -61,11 +62,39 @@ export function initControllers(options: InitControllersOptions) {
       const video = videos[inter.object.userData.index];
       if (video) {
         if (inter.object.userData.action === 'play') {
-          video.play?.();
+          try {
+            // 在 controller 触发时尝试 resume AudioContext（如果传入了 listener）
+            if (listener && (listener as any).context && (listener as any).context.state === 'suspended') {
+              try {
+                await ((listener as any).context as AudioContext).resume();
+                console.log('[audio] AudioContext resumed via controller interaction');
+              } catch (e) {
+                console.warn('[audio] resume() via controller failed:', e);
+              }
+            }
+
+            const p = video.play?.();
+            if (p && typeof p.then === 'function') {
+              await p;
+            }
+            // 在播放成功后解除静音（用户显式交互触发）
+            try {
+              video.muted = false;
+            } catch (e) {
+              // ignore
+            }
+          } catch (err) {
+            // 捕获并打印 play() 的拒绝信息，便于调试 autoplay/权限问题
+            console.warn('video.play() rejected:', err);
+          }
           break
         }
         if (inter.object.userData.action === 'stop') {
-          video.pause?.();
+          try {
+            video.pause?.();
+          } catch (e) {
+            // ignore
+          }
           break
         }
       }
