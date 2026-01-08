@@ -12,6 +12,7 @@ export function createVideoScreen(video, listener, videos) {
     videoElem.setAttribute('playsinline', '');
     // 预加载以降低首次播放延迟
     videoElem.preload = 'auto';
+    videoElem.currentTime = 1;
     videos[video.id] = videoElem;
 
     const texture = new THREE.VideoTexture(videoElem);

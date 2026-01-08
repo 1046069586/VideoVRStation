@@ -41,5 +41,12 @@ export const videoData = [
     position: [6.07, 1.8, 0],
     normal: [1, 0, 0]
   },
+  {
+    id: 7,
+    url: '/1.mp4',
+    title: 'VR Video 7',
+    position: [0, 1.8, 5.93],
+    normal: [0, 0, -1]
+  },
   
 ];
