@@ -8,7 +8,7 @@ import * as THREE from 'three'
 import { createScene } from './sceneSetup'
 import { initControllers } from './controllers'
 import { createVideos } from './videoManager'
-import { createXRConsole } from './XRConsole';
+// import { createXRConsole } from './XRConsole';
 
 let container: HTMLElement | null = null
 let scene: THREE.Scene | null = null
@@ -79,10 +79,10 @@ onMounted(async () => {
   window.addEventListener('resize', onResize)
   animate()
   // 1. 创建控制台实例
-  const xrConsole = createXRConsole();
-  xrConsole.position.set(0, 0.15, -0.1);
-  xrConsole.rotation.x = -Math.PI / 3; // 轻微向上倾斜，便于阅读
-  controllers?.controllerGripLeft?.add(xrConsole);
+  // const xrConsole = createXRConsole();
+  // xrConsole.position.set(0, 0.15, -0.1);
+  // xrConsole.rotation.x = -Math.PI / 3; // 轻微向上倾斜，便于阅读
+  // controllers?.controllerGripLeft?.add(xrConsole);
 })
 
 onBeforeUnmount(() => {
