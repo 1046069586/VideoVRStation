@@ -46,12 +46,12 @@ export async function createScene(containerId = 'container') {
       if (loadedScene.scene.children && loadedScene.scene.children[6]) {
         spotLight.target = loadedScene.scene.children[6];
       }
-      loadedScene.scene.children.forEach(obj => {
-        if ((obj as any).isMesh && obj.name !== 'Ground') {
+      loadedScene.scene.children?.forEach(obj => {
+        if ((obj as THREE.Mesh).isMesh && obj.name !== 'Ground') {
           obstacles.push(obj);
           try {
-            (obj as any).geometry.computeBoundingBox();
-            (obj as any).userData.boundingBox = (obj as any).geometry.boundingBox.clone()
+            (obj as THREE.Mesh).geometry.computeBoundingBox();
+            obj.userData.boundingBox = (obj as THREE.Mesh).geometry.boundingBox?.clone()
               .applyMatrix4(obj.matrixWorld);
           } catch (e) {
             // ignore
@@ -71,9 +71,9 @@ export async function createScene(containerId = 'container') {
   // 注意：不要在这里对所有视频自动 play/unmute，播放应由用户使用 controller 点击单独触发。
   vrButton.addEventListener('click', async () => {
     try {
-      if ((listener as any) && (listener as any).context && (listener as any).context.state === 'suspended') {
+      if (listener && listener.context && listener.context.state === 'suspended') {
         try {
-          await ((listener as any).context as AudioContext).resume();
+          await listener.context.resume();
           console.log('[audio] AudioContext resumed via VR button click');
         } catch (e) {
           console.warn('[audio] resume() failed:', e);

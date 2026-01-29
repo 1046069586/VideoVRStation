@@ -1,39 +1,29 @@
 import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
-
-export type InitControllersOptions = {
-  renderer: THREE.WebGLRenderer;
-  scene: THREE.Scene;
-  camera: THREE.Camera;
-  interactableObjects: THREE.Object3D[];
-  videos: { [key: string]: HTMLVideoElement };
-  listener?: THREE.AudioListener;
-  obstacles: THREE.Object3D[];
-  playerStart?: THREE.Vector3;
-};
+import type { InitControllersOptions, TickableObject, ControllerEvent, ControllerEventTarget } from './types'
 
 export function initControllers(options: InitControllersOptions) {
-  const { renderer, scene, camera, interactableObjects, videos, obstacles, listener } = options as any;
+  const { renderer, scene, camera, interactableObjects, videos, obstacles, listener } = options;
   const player = new THREE.Group();
   player.position.set(0, 0.2, 8);
   player.add(camera);
   scene.add(player);
 
-  const controllerLeft: any = renderer.xr.getController(0);
-  const controllerRight: any = renderer.xr.getController(1);
+  const controllerLeft: ControllerEventTarget = renderer.xr.getController(0);
+  const controllerRight: ControllerEventTarget = renderer.xr.getController(1);
 
-  const controllerModelFactory = new XRControllerModelFactory();
+  const controllerModelFactory: XRControllerModelFactory = new XRControllerModelFactory();
 
-  const controllerGripLeft = renderer.xr.getControllerGrip(0);
+  // controllerGripLeft&controllerGripRight 仅用于生成模型
+  const controllerGripLeft: THREE.XRGripSpace = renderer.xr.getControllerGrip(0);
   controllerGripLeft.add(controllerModelFactory.createControllerModel(controllerGripLeft));
   player.add(controllerGripLeft);
-
-  const controllerGripRight = renderer.xr.getControllerGrip(1);
+  const controllerGripRight: THREE.XRGripSpace = renderer.xr.getControllerGrip(1);
   controllerGripRight.add(controllerModelFactory.createControllerModel(controllerGripRight));
   player.add(controllerGripRight);
 
   // state
-  const loopObjects: any[] = [];
+  const loopObjects: TickableObject[] = [];
 
   // create lasers and circles
   const rLaser = createLaser();
@@ -46,7 +36,7 @@ export function initControllers(options: InitControllersOptions) {
   loopObjects.push(rCircle, lCircle);
 
   // attach events
-  async function onSelectStart(event: any) {
+  async function onSelectStart(event: ControllerEvent) {
     const controller = event.target;
     const tempMatrix = new THREE.Matrix4();
     tempMatrix.identity().extractRotation(controller.matrixWorld);
@@ -64,9 +54,9 @@ export function initControllers(options: InitControllersOptions) {
         if (inter.object.userData.action === 'play') {
           try {
             // 在 controller 触发时尝试 resume AudioContext（如果传入了 listener）
-            if (listener && (listener as any).context && (listener as any).context.state === 'suspended') {
+            if (listener && listener.context && listener.context.state === 'suspended') {
               try {
-                await ((listener as any).context as AudioContext).resume();
+                await listener.context.resume();
                 console.log('[audio] AudioContext resumed via controller interaction');
               } catch (e) {
                 console.warn('[audio] resume() via controller failed:', e);
@@ -107,7 +97,7 @@ export function initControllers(options: InitControllersOptions) {
 
   controllerLeft.addEventListener('selectstart', onSelectStart);
   controllerLeft.addEventListener('selectend', onSelectEnd);
-  controllerLeft.addEventListener('connected', (event: any) => {
+  controllerLeft.addEventListener('connected', (event: ControllerEvent) => {
     controllerLeft.gamepad = event.data.gamepad;
     controllerLeft.handedness = event.data.handedness;
   });
@@ -115,7 +105,7 @@ export function initControllers(options: InitControllersOptions) {
 
   controllerRight.addEventListener('selectstart', onSelectStart);
   controllerRight.addEventListener('selectend', onSelectEnd);
-  controllerRight.addEventListener('connected', (event: any) => {
+  controllerRight.addEventListener('connected', (event: ControllerEvent) => {
     controllerRight.gamepad = event.data.gamepad;
     controllerRight.handedness = event.data.handedness;
   });
@@ -136,7 +126,7 @@ export function initControllers(options: InitControllersOptions) {
     player.position.copy(newPosition);
     const playerSphere = new THREE.Sphere(player.position.clone(), playerRadius);
     for (const obs of obstacles) {
-      const bs = (obs as any).userData.boundingBox;
+      const bs = obs.userData.boundingBox;
       if (bs && playerSphere.intersectsBox(bs)) {
         player.position.copy(oldPosition);
         break;
@@ -152,7 +142,7 @@ export function initControllers(options: InitControllersOptions) {
       const y = axes[3] || 0;
       if (Math.abs(y) > deadZone) {
         const forward = new THREE.Vector3();
-        (camera as any).getWorldDirection(forward);
+        camera.getWorldDirection(forward);
         forward.y = 0;
         forward.normalize();
         const newPosition = player.position.clone().addScaledVector(forward, -y * moveSpeed * delta);
@@ -160,7 +150,7 @@ export function initControllers(options: InitControllersOptions) {
       }
       if (Math.abs(x) > deadZone) {
         const cameraForward = new THREE.Vector3();
-        (camera as any).getWorldDirection(cameraForward);
+        camera.getWorldDirection(cameraForward);
         cameraForward.y = 0;
         cameraForward.normalize();
         const rightVec = new THREE.Vector3();
@@ -178,7 +168,7 @@ export function initControllers(options: InitControllersOptions) {
     }
   }
 
-  function createLaser() {
+  function createLaser(): THREE.Line {
     const laserGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, 0, -1),
@@ -188,12 +178,12 @@ export function initControllers(options: InitControllersOptions) {
     return laser;
   }
 
-  function createCircle() {
+  function createCircle(): TickableObject {
     const geom = new THREE.RingGeometry(0.01, 0.013, 16);
     const material = new THREE.MeshStandardMaterial({ color: 0x0000ff, side: THREE.DoubleSide });
-    const circle = new THREE.Mesh(geom, material);
+    const circle = new THREE.Mesh(geom, material) as TickableObject;
     let time = 0;
-    (circle as any).tick = (delta: number) => {
+    circle.tick = (delta: number) => {
       time += delta;
       const scale = 0.8 + Math.sin(time * 3) * 0.3;
       circle.scale.set(scale, scale, scale);
@@ -201,7 +191,7 @@ export function initControllers(options: InitControllersOptions) {
     return circle;
   }
 
-  function laserFollow(controller: any, laser: any, circle: any) {
+  function laserFollow(controller: ControllerEventTarget, laser: THREE.Line, circle: TickableObject) {
     const matrix = new THREE.Matrix4();
     matrix.identity().extractRotation(controller.matrixWorld);
     const direction = new THREE.Vector3(0, 0, -1).applyMatrix4(matrix).normalize();
@@ -209,19 +199,20 @@ export function initControllers(options: InitControllersOptions) {
     controller.getWorldPosition(controllerPosition);
     const raycaster = new THREE.Raycaster();
     raycaster.set(controllerPosition, direction);
-    const intersects = raycaster.intersectObjects(interactableObjects, true);
-    if (intersects.length > 0) {
-      laser.geometry.setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -intersects[0].distance)]);
-      laser.material.color.set(0x00ff00);
-      const director = intersects[0].point.clone().sub(controllerPosition).normalize();
-      circle.position.copy(intersects[0].point.clone().sub(director.multiplyScalar(0.01)));
+    const intersects = raycaster.intersectObjects(interactableObjects, true) || [];
+    if (intersects.length > 0 && intersects[0]) {
+      const firstIntersect = intersects[0];
+      laser.geometry.setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -firstIntersect.distance)]);
+      (laser.material as THREE.LineBasicMaterial).color.set(0x00ff00);
+      const director = firstIntersect.point.clone().sub(controllerPosition).normalize();
+      circle.position.copy(firstIntersect.point.clone().sub(director.multiplyScalar(0.01)));
       circle.visible = true;
       const cameraPosition = new THREE.Vector3();
-      (camera as any).getWorldPosition(cameraPosition);
+      camera.getWorldPosition(cameraPosition);
       circle.lookAt(cameraPosition);
     } else {
       laser.geometry.setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -10)]);
-      laser.material.color.set(0xff0000);
+      (laser.material as THREE.LineBasicMaterial).color.set(0xff0000);
       circle.visible = false;
     }
   }

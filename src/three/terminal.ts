@@ -1,35 +1,42 @@
 import * as THREE from 'three';
 import {  GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import type { VideoData } from './types';
 
-export  async function createTerminal(video, interactableObjects: THREE.Object3D[]) {
+export  async function createTerminal(video: VideoData, interactableObjects: THREE.Object3D[]) : Promise<THREE.Group> {
     const loader = new GLTFLoader();
     const pannelGLTF = await loader.loadAsync('./terminal.glb')
     const pannel = pannelGLTF.scene.children[0]
-    pannel.scale.set(0.008,0.008,0.008)
-    const {playBtn, stopBtn} = createTerminalButton(video.id)
-    interactableObjects.push(playBtn, stopBtn)
+    if(pannel){
+        pannel.scale.set(0.008,0.008,0.008)
+        const {playBtn, stopBtn} = createTerminalButton(video.id)
+        interactableObjects.push(playBtn, stopBtn)
+        
+        const pannelGroup = new THREE.Group()
+        pannelGroup.add(pannel)
+        pannelGroup.add(playBtn, stopBtn)
+
+        pannelGroup.position.set(video.position[0]+video.normal[0]*0.43, 0, video.position[2]+video.normal[2]*0.43);
+        const normal = new THREE.Vector3(video.normal[0], video.normal[1], video.normal[2]).normalize();
+        const zAxis = new THREE.Vector3(0, 0, -1); // plane 的本地正面
+        const quat = new THREE.Quaternion().setFromUnitVectors(zAxis, normal);
+        pannelGroup.quaternion.copy(quat);
+
+        return pannelGroup; 
+    }
+    else {
+        return new THREE.Group();
+    }
     
-    const pannelGroup = new THREE.Group()
-    pannelGroup.add(pannel)
-    pannelGroup.add(playBtn, stopBtn)
-
-    pannelGroup.position.set(video.position[0]+video.normal[0]*0.43, 0, video.position[2]+video.normal[2]*0.43);
-    const normal = new THREE.Vector3(video.normal[0], video.normal[1], video.normal[2]).normalize();
-    const zAxis = new THREE.Vector3(0, 0, -1); // plane 的本地正面
-    const quat = new THREE.Quaternion().setFromUnitVectors(zAxis, normal);
-    pannelGroup.quaternion.copy(quat);
-
-    return pannelGroup;
 }
 
 
-function createTerminalButton(videoID){
+function createTerminalButton(videoID: number): { playBtn: THREE.Mesh; stopBtn: THREE.Group } {
     const playBtn = createPlayButton(videoID);
     const stopBtn = createStopButton(videoID);
-    return {playBtn, stopBtn };
+    return { playBtn, stopBtn };
 }
 
-function createPlayButton(videoID){
+function createPlayButton(videoID: number): THREE.Mesh {
         // 1. 创建材质
     const buttonMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 }); // 绿色
 
@@ -50,7 +57,7 @@ function createPlayButton(videoID){
 }
 
 
-function createStopButton(videoID){
+function createStopButton(videoID: number): THREE.Group {
     const pauseGroup = new THREE.Group(); // 创建一个组
 
     const barGeo = new THREE.BoxGeometry(0.02, 0.08, 0.02); // 宽, 高, 深

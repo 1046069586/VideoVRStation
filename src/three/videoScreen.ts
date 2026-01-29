@@ -1,6 +1,10 @@
 import * as THREE from 'three';
+import type { VideoData } from './types';
 
-export function createVideoScreen(video, listener, videos) {
+export function createVideoScreen(video: VideoData, 
+                                  listener: THREE.AudioListener, 
+                                  videos: { [key: string]: HTMLVideoElement })
+                                  : THREE.Mesh {
     const videoElem = document.createElement('video');
     videoElem.src = video.url;
     videoElem.crossOrigin = 'anonymous';

@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { createScene } from './sceneSetup'
 import { initControllers } from './controllers'
 import { createVideos } from './videoManager'
+import type { TickableObject } from './types'
 // import { createXRConsole } from './XRConsole';
 
 let container: HTMLElement | null = null
@@ -21,19 +22,13 @@ let interactableObjects: THREE.Object3D[] = []
 let videos: { [key: string]: HTMLVideoElement } = {}
 
 let controllers: ReturnType<typeof initControllers> | null = null
-let loopObjects: any[] = []
+let loopObjects: TickableObject[] = []
 
 function render() {
-  // const delta = 0.016
-  // renderer.clock may be attached elsewhere; use a safe any-cast to avoid type errors
-  const delta = (renderer && (renderer as any).xr?.isPresenting && (renderer as any).xr.getSession())
-    ? ((renderer as any).clock ? (renderer as any).clock.getDelta() : 0.016)
-    : 0.016;
-
+  const clock = new THREE.Clock();
+  const delta = clock.getDelta();
   for (const obj of loopObjects) {
-    if (obj && typeof obj.tick === 'function') {
-      obj.tick(delta)
-    }
+    obj.tick?.(delta)
   }
 
   // controllers may be null; use optional chaining and guard their members
@@ -63,7 +58,7 @@ onMounted(async () => {
   const res = await createScene('container')
   container = res.container
   scene = res.scene
-  camera = res.camera as THREE.PerspectiveCamera
+  camera = res.camera
   renderer = res.renderer
   listener = res.listener
   obstacles = res.obstacles
@@ -71,10 +66,10 @@ onMounted(async () => {
   videos = res.videos
 
   // pass explicitly-typed values to controllers
-  controllers = initControllers({ renderer: renderer as THREE.WebGLRenderer, scene: scene as THREE.Scene, camera: camera as THREE.Camera, interactableObjects, videos, obstacles, listener })
+  controllers = initControllers({ renderer, scene, camera, interactableObjects, videos, obstacles, listener })
   loopObjects = controllers?.loopObjects || []
 
-  await createVideos(scene as THREE.Scene, listener as THREE.AudioListener, interactableObjects, videos)
+  await createVideos(scene, listener, interactableObjects, videos)
 
   window.addEventListener('resize', onResize)
   animate()
