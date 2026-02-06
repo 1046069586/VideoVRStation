@@ -29,3 +29,8 @@ export type VideoData = {
   position: [number, number, number];
   normal: [number, number, number];
 };
+
+export type InitMnkOptions = InitControllersOptions & {
+  domElement: HTMLElement;
+  player?: THREE.Group; // optional existing player (from VR controllers)
+}

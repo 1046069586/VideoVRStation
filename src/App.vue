@@ -29,16 +29,11 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref } from 'vue';
 import VRScene from './three/VRScene.vue';
 
-export default {
-  name: 'App',
-  components: { VRScene },
-  data() {
-    return { showOverlay: true };
-  }
-};
+const showOverlay = ref(true);
 </script>
 
 <style>

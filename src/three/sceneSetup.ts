@@ -83,7 +83,7 @@ export async function createScene(containerId = 'container') {
             obj.userData.boundingBox = (obj as THREE.Mesh).geometry.boundingBox?.clone()
               .applyMatrix4(obj.matrixWorld);
           } catch (e) {
-            // ignore
+            console.warn('[sceneSetup] computeBoundingBox or applyMatrix4 failed:', e);
           }
         }
       });

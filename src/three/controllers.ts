@@ -71,7 +71,7 @@ export function initControllers(options: InitControllersOptions) {
             try {
               video.muted = false;
             } catch (e) {
-              // ignore
+              console.warn('解除静音失败:', e);
             }
           } catch (err) {
             // 捕获并打印 play() 的拒绝信息，便于调试 autoplay/权限问题
@@ -83,7 +83,7 @@ export function initControllers(options: InitControllersOptions) {
           try {
             video.pause?.();
           } catch (e) {
-            // ignore
+            console.warn('暂停失败:', e);
           }
           break
         }

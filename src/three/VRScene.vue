@@ -7,6 +7,7 @@ import { onBeforeUnmount, onMounted } from 'vue'
 import * as THREE from 'three'
 import { createScene } from './sceneSetup'
 import { initControllers } from './controllers'
+import { initMnkControls } from './mnkControls'
 import { createVideos } from './videoManager'
 import type { TickableObject } from './types'
 // import { createXRConsole } from './XRConsole';
@@ -23,9 +24,10 @@ let videos: { [key: string]: HTMLVideoElement } = {}
 
 let controllers: ReturnType<typeof initControllers> | null = null
 let loopObjects: TickableObject[] = []
+const clock = new THREE.Clock();
+let mnkControls: ReturnType<typeof initMnkControls> | null = null
 
 function render() {
-  const clock = new THREE.Clock();
   const delta = clock.getDelta();
   for (const obj of loopObjects) {
     obj.tick?.(delta)
@@ -35,6 +37,9 @@ function render() {
   controllers?.handleJoystickMovement?.(delta)
   controllers?.laserFollow?.(controllers?.controllerLeft, controllers?.lLaser, controllers?.lCircle)
   controllers?.laserFollow?.(controllers?.controllerRight, controllers?.rLaser, controllers?.rCircle)
+
+  // mnk controls update (WASD + mouse look)
+  mnkControls?.update(delta)
 
   if (renderer && scene && camera) {
     renderer.render(scene, camera)
@@ -69,6 +74,15 @@ onMounted(async () => {
   controllers = initControllers({ renderer, scene, camera, interactableObjects, videos, obstacles, listener })
   loopObjects = controllers?.loopObjects || []
 
+  // initialize desktop controls and attach to same player used by VR controllers (if present)
+  try {
+    mnkControls = initMnkControls({ renderer, scene, camera, domElement: renderer.domElement, interactableObjects, videos, obstacles, listener, player: controllers.player })
+  } catch (e) {
+    // fail gracefully if desktop controls can't be created
+    console.warn('desktop controls init failed', e)
+    mnkControls = null
+  }
+
   await createVideos(scene, listener, interactableObjects, videos)
 
   window.addEventListener('resize', onResize)
@@ -82,6 +96,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
+  mnkControls?.dispose()
   if (renderer) {
     renderer.dispose()
   }
