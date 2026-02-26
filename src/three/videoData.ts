@@ -2,21 +2,21 @@ export const videoData = [
   {
     id: 1,
     url: '/1.mp4',
-    title: 'VR Video 1',
+    title: '山水',
     position: [0, 1.8, 6.07],
     normal: [0, 0, 1]
   },
   {
     id: 2,
     url: '/2.mp4',
-    title: 'VR Video 2',
+    title: '晚霞',
     position: [-6.07, 1.8, 0],
     normal: [-1, 0, 0]
   },
   {
     id: 3,
     url: '/3.mp4',
-    title: 'VR Video 3',
+    title: '战机',
     position: [-9.93, 1.8, 0],
     normal: [1, 0, 0]
   },

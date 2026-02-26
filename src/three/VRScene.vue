@@ -24,12 +24,16 @@ let videos: { [key: string]: HTMLVideoElement } = {}
 
 let controllers: ReturnType<typeof initControllers> | null = null
 let loopObjects: TickableObject[] = []
+let sceneLoopObjects: TickableObject[] = []
 const clock = new THREE.Clock();
 let mnkControls: ReturnType<typeof initMnkControls> | null = null
 
 function render() {
   const delta = clock.getDelta();
-  for (const obj of loopObjects) {
+  // 每帧合并 controllers 内部的 loopObjects 与 sceneSetup 返回的 loopObjects（后者可能在 GLB 加载后才填充）
+  const controllerLoops = controllers?.loopObjects || []
+  const combined = [...controllerLoops, ...sceneLoopObjects]
+  for (const obj of combined) {
     obj.tick?.(delta)
   }
 
@@ -69,8 +73,8 @@ onMounted(async () => {
   obstacles = res.obstacles
   interactableObjects = res.interactableObjects
   videos = res.videos
+  sceneLoopObjects = res.loopObjects || []
 
-  // pass explicitly-typed values to controllers
   controllers = initControllers({ renderer, scene, camera, interactableObjects, videos, obstacles, listener })
   loopObjects = controllers?.loopObjects || []
 
